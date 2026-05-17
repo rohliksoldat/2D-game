@@ -194,7 +194,7 @@
   <span id="wave">Vlna: 1/5</span> &nbsp;|&nbsp;
   <span id="weapon">Zbraň: Pistole</span>
 </div>
-<div id="info"><b>WASD</b> = pohyb &nbsp;|&nbsp; <b>myš</b> = míření &nbsp;|&nbsp; <b>mezerník</b>/<b>klik</b> = útok &nbsp;|&nbsp; <b>E</b> = přepnout zbraň</div>
+<div id="info"><b>WASD</b>/<b>šipky</b> = pohyb &nbsp;|&nbsp; <b>myš</b> = míření &nbsp;|&nbsp; <b>mezerník</b>/<b>klik</b> = útok &nbsp;|&nbsp; <b>E</b> = přepnout zbraň</div>
 <div id="gameover">
   <div id="finalText">Konec hry</div>
   <div>
@@ -427,10 +427,11 @@ const keys = { w: false, a: false, s: false, d: false, space: false, mouse: fals
 const SPIN_SPEED = 14; // rad/s při držení R
 window.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if (k === 'w') keys.w = true;
-  if (k === 'a') keys.a = true;
-  if (k === 's') keys.s = true;
-  if (k === 'd') keys.d = true;
+  if (k === 'w' || k === 'arrowup') keys.w = true;
+  if (k === 'a' || k === 'arrowleft') keys.a = true;
+  if (k === 's' || k === 'arrowdown') keys.s = true;
+  if (k === 'd' || k === 'arrowright') keys.d = true;
+  if (k.startsWith('arrow')) e.preventDefault();
   if (k === 'r') keys.r = true;
   if (k === 'e' && !e.repeat) switchWeapon();
   if (e.code === 'Space') {
@@ -459,10 +460,10 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => {
   const k = e.key.toLowerCase();
   if (e.code === 'Space') keys.space = false;
-  if (k === 'w') keys.w = false;
-  if (k === 'a') keys.a = false;
-  if (k === 's') keys.s = false;
-  if (k === 'd') keys.d = false;
+  if (k === 'w' || k === 'arrowup') keys.w = false;
+  if (k === 'a' || k === 'arrowleft') keys.a = false;
+  if (k === 's' || k === 'arrowdown') keys.s = false;
+  if (k === 'd' || k === 'arrowright') keys.d = false;
   if (k === 'r') keys.r = false;
 });
 
