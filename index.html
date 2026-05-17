@@ -513,17 +513,23 @@ function tryAttack() {
       });
     }
   } else if (state.weapon === 'rpg') {
-    state.bullets.push({
-      x: state.px + Math.cos(state.angle) * (PLAYER_RADIUS + 4),
-      y: state.py + Math.sin(state.angle) * (PLAYER_RADIUS + 4),
-      vx: Math.cos(state.angle) * w.projSpeed,
-      vy: Math.sin(state.angle) * w.projSpeed,
-      radius: 8,
-      damage: dmg,
-      isRpg: true,
-      explosionRadius: w.explosionRadius,
-      alive: true,
-    });
+    const N = 1 + state.upgrades.extraBullets;
+    const spreadAngle = (N > 1 ? 0.5 : 0) * state.upgrades.spreadMult;
+    for (let i = 0; i < N; i++) {
+      const t = N === 1 ? 0 : (i / (N - 1)) - 0.5;
+      const a = state.angle + t * spreadAngle;
+      state.bullets.push({
+        x: state.px + Math.cos(a) * (PLAYER_RADIUS + 4),
+        y: state.py + Math.sin(a) * (PLAYER_RADIUS + 4),
+        vx: Math.cos(a) * w.projSpeed,
+        vy: Math.sin(a) * w.projSpeed,
+        radius: 8,
+        damage: dmg,
+        isRpg: true,
+        explosionRadius: w.explosionRadius,
+        alive: true,
+      });
+    }
   } else if (state.weapon === 'bat') {
     state.batSwing = 0.18;
     for (const e of state.enemies) {
