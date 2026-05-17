@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>2D Hra - Otáčení</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #111;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  #game {
+    display: block;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    cursor: none;
+  }
+  #hud {
+    position: fixed;
+    top: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+    font-size: 18px;
+    text-shadow: 0 0 6px #000;
+  }
+  #info {
+    position: fixed;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+    font-size: 14px;
+    opacity: 0.7;
+  }
+  #gameover {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(0,0,0,0.7);
+    font-size: 32px;
+  }
+  #gameover button {
+    margin-top: 20px;
+    padding: 10px 24px;
+    font-size: 18px;
+    cursor: pointer;
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 6px;
+  }
+  #upgrade {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(0,0,0,0.75);
+    z-index: 10;
+  }
+  #upgrade h2 {
+    margin: 0 0 24px;
+    font-size: 28px;
+    color: #ffd460;
+  }
+  .upgrade-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .upgrade-card {
+    width: 220px;
+    padding: 22px 18px;
+    background: #1a1a2e;
+    border: 2px solid #53a8e2;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    text-align: center;
+    transition: transform 0.1s;
+  }
+  .upgrade-card:hover {
+    transform: translateY(-4px);
+  }
+  .upgrade-card .rarity {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+  .upgrade-card .title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .upgrade-card .desc {
+    font-size: 14px;
+    opacity: 0.85;
+  }
+  .upgrade-card.common    { border-color: #8aa1b8; }
+  .upgrade-card.common    .title, .upgrade-card.common .rarity    { color: #8aa1b8; }
+  .upgrade-card.uncommon  { border-color: #4caf50; }
+  .upgrade-card.uncommon  .title, .upgrade-card.uncommon .rarity  { color: #4caf50; }
+  .upgrade-card.rare      { border-color: #53a8e2; box-shadow: 0 0 14px rgba(83,168,226,0.4); }
+  .upgrade-card.rare      .title, .upgrade-card.rare .rarity      { color: #53a8e2; }
+  .upgrade-card.epic      { border-color: #c77dff; box-shadow: 0 0 18px rgba(199,125,255,0.5); }
+  .upgrade-card.epic      .title, .upgrade-card.epic .rarity      { color: #c77dff; }
+  .upgrade-card.legendary { border-color: #ffd460; box-shadow: 0 0 22px rgba(255,212,96,0.6); }
+  .upgrade-card.legendary .title, .upgrade-card.legendary .rarity { color: #ffd460; }
+  .upgrade-card.mythic    { border-color: #ff4081; box-shadow: 0 0 28px rgba(255,64,129,0.7); background: linear-gradient(135deg, #1a1a2e 60%, #3a0a20 100%); }
+  .upgrade-card.mythic    .title, .upgrade-card.mythic .rarity    { color: #ff4081; }
+  .upgrade-card.godly     { border-color: #fff; box-shadow: 0 0 36px rgba(255,255,255,0.8), 0 0 50px rgba(0,200,255,0.4); background: linear-gradient(135deg, #1a1a2e 0%, #2a1a3a 50%, #1a2a3a 100%); }
+  .upgrade-card.godly     .title, .upgrade-card.godly .rarity     { color: #fff; text-shadow: 0 0 8px #fff, 0 0 16px #4ad; }
+  #startmenu {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a1a 100%);
+    z-index: 20;
+    color: white;
+  }
+  #startmenu h1 {
+    font-size: 48px;
+    margin: 0 0 8px;
+    color: #ffd460;
+    text-shadow: 0 0 16px rgba(255,212,96,0.5);
+  }
+  #startmenu .sub {
+    font-size: 16px;
+    opacity: 0.7;
+    margin-bottom: 36px;
+  }
+  #startmenu .mode-options {
+    display: flex;
+    gap: 24px;
+  }
+  .mode-card {
+    width: 240px;
+    padding: 26px 22px;
+    background: #1a1a2e;
+    border: 2px solid #53a8e2;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+  }
+  .mode-card:hover {
+    transform: translateY(-4px);
+    border-color: #ffd460;
+    box-shadow: 0 0 18px rgba(255,212,96,0.4);
+  }
+  .mode-card .title { font-size: 22px; font-weight: bold; margin-bottom: 8px; color: #ffd460; }
+  .mode-card .desc { font-size: 14px; opacity: 0.85; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="startmenu">
+  <h1>2D Survival</h1>
+  <div class="sub">Vyber mód hry</div>
+  <div class="mode-options">
+    <div class="mode-card" onclick="startGame('survival')">
+      <div class="title">Boj o přežití</div>
+      <div class="desc">Normální mód s vlnami, upgrady, BOSSEM (900) a FINAL BOSSEM (2500). Cíl: porazit FINAL BOSSE.</div>
+    </div>
+    <div class="mode-card" onclick="startGame('sandbox')">
+      <div class="title">Sandbox</div>
+      <div class="desc">Všechny zbraně odemčené, žádní bossi, hraj donekonečna a vyzkoušej si build.</div>
+    </div>
+  </div>
+</div>
+<div id="hud">
+  <span id="score">Skóre: 0</span> &nbsp;|&nbsp;
+  <span id="lives">Životy: 3</span> &nbsp;|&nbsp;
+  <span id="wave">Vlna: 1/5</span> &nbsp;|&nbsp;
+  <span id="weapon">Zbraň: Pistole</span>
+</div>
+<div id="info"><b>WASD</b> = pohyb &nbsp;|&nbsp; <b>myš</b> = míření &nbsp;|&nbsp; <b>mezerník</b>/<b>klik</b> = útok &nbsp;|&nbsp; <b>E</b> = přepnout zbraň</div>
+<div id="gameover">
+  <div id="finalText">Konec hry</div>
+  <div>
+    <button onclick="restart()">Hrát znovu</button>
+    <button id="continueBtn" onclick="continueGame()" style="display:none; background:#4caf50;">Hrát dál</button>
+  </div>
+</div>
+<div id="upgrade">
+  <h2 id="upgrade-title">Vyber si upgrade!</h2>
+  <div class="upgrade-options" id="upgrade-options"></div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, cx = 0, cy = 0;
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  W = window.innerWidth;
+  H = window.innerHeight;
+  cx = W / 2;
+  cy = H / 2;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const RETICLE_DIST = 90;
+const AIM_CLAMP = 500;
+let aimX = RETICLE_DIST, aimY = 0;
+
+canvas.addEventListener('click', () => {
+  if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
+});
+canvas.addEventListener('mousemove', e => {
+  if (document.pointerLockElement === canvas) {
+    aimX += e.movementX;
+    aimY += e.movementY;
+    const mag = Math.hypot(aimX, aimY);
+    if (mag > AIM_CLAMP) {
+      aimX = aimX / mag * AIM_CLAMP;
+      aimY = aimY / mag * AIM_CLAMP;
+    }
+  }
+});
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 0) keys.mouse = true;
+});
+canvas.addEventListener('mouseup', e => {
+  if (e.button === 0) keys.mouse = false;
+});
+
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const weaponEl = document.getElementById('weapon');
+const gameoverEl = document.getElementById('gameover');
+const finalTextEl = document.getElementById('finalText');
+const upgradeEl = document.getElementById('upgrade');
+const upgradeTitleEl = document.getElementById('upgrade-title');
+const upgradeOptionsEl = document.getElementById('upgrade-options');
+const waveEl = document.getElementById('wave');
+
+const PLAYER_RADIUS = 26;
+const PLAYER_SPEED = 280;
+const BULLET_SPEED = 700;
+
+const WEAPONS = {
+  pistol: { name: 'Pistole', cooldown: 0.25, damage: 0.5 },
+  bat:    { name: 'Baseballová pálka', cooldown: 0.2, damage: 0.4, range: 210, arc: Math.PI / 2 },
+  ak:     { name: 'AK47', cooldown: 0.05, damage: 0.25 },
+  rpg:    { name: 'RPG', cooldown: 0.5, damage: 0.5, explosionRadius: 200, projSpeed: 450 },
+};
+const WEAPON_ORDER = ['pistol', 'bat', 'ak', 'rpg'];
+const AK_UNLOCK_KILLS = 30;
+const RPG_UNLOCK_KILLS = 200;
+const WIN_KILLS = 1000;
+// každá další vlna o 50 % více nepřátel než předchozí
+const WAVE_SIZES = [];
+const WAVE_THRESHOLDS = [0];
+{
+  let s = 100;
+  for (let i = 0; i < 5; i++) {
+    WAVE_SIZES.push(Math.round(s));
+    WAVE_THRESHOLDS.push(WAVE_THRESHOLDS[i] + Math.round(s));
+    s *= 1.5;
+  }
+}
+
+const ENEMY_TYPES = {
+  zombie:     { name: 'Zombie',   color: '#e94560', speedMin: 60,  speedMax: 120, hp: 1, radius: 18 },
+  runner:     { name: 'Sprintér', color: '#a3d977', speedMin: 150, speedMax: 220, hp: 1, radius: 14 },
+  tank:       { name: 'Tank',     color: '#7c4dff', speedMin: 35,  speedMax: 55,  hp: 3, radius: 30 },
+  armored:    { name: 'Pancéř',   color: '#90a4ae', speedMin: 70,  speedMax: 110, hp: 4, radius: 22 },
+  boss:       { name: 'Boss',     color: '#d32f2f', speedMin: 110, speedMax: 150, hp: 6, radius: 26 },
+  elite:      { name: 'Elita',    color: '#7a0010', speedMin: 80,  speedMax: 130, hp: 100, radius: 22 },
+  finalBoss:  { name: 'BOSS',     color: '#4a0000', speedMin: 25,  speedMax: 45,  hp: 25000, radius: 60 },
+  ultraBoss:  { name: 'FINAL BOSS', color: '#1a0030', speedMin: 30, speedMax: 55, hp: 2500000, radius: 90 },
+  ultraMinion:{ name: 'Stín',     color: '#3d0066', speedMin: 100, speedMax: 160, hp: 300, radius: 24 },
+};
+const BOSS_TRIGGER_SCORE = 900;
+const FINAL_BOSS_TRIGGER_SCORE = 2500;
+const BOSS_MINION_INTERVAL = 8;
+const BOSS_MINION_MIN = 10;
+const BOSS_MINION_MAX = 20;
+const FINAL_BOSS_MINION_INTERVAL = 6;
+const FINAL_BOSS_MINION_MIN = 20;
+const FINAL_BOSS_MINION_MAX = 50;
+const ENDLESS_LEVEL_TIME = 15; // sekund mezi úrovněmi nárůstu
+const WAVE_TYPES = [
+  ['zombie'],
+  ['zombie', 'runner'],
+  ['zombie', 'runner', 'tank'],
+  ['zombie', 'runner', 'tank', 'armored'],
+  ['zombie', 'runner', 'tank', 'armored', 'boss'],
+];
+const WAVE_NEW_ENEMY = ['Zombie', 'Sprintér', 'Tank', 'Pancéř', 'Boss'];
+
+function currentWave() {
+  for (let i = WAVE_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (state.score >= WAVE_THRESHOLDS[i]) return Math.min(i + 1, WAVE_TYPES.length);
+  }
+  return 1;
+}
+
+const UPGRADE_EVERY = 50;
+
+const state = {
+  px: 0, py: 0,
+  angle: 0,
+  mode: 'survival',
+  started: false,
+  weapon: 'pistol',
+  unlocked: { pistol: true, bat: true, ak: false, rpg: false },
+  enemies: [],
+  bullets: [],
+  explosions: [],
+  bossPhase: false,
+  bossMinionTimer: 0,
+  bossDefeated: false,
+  finalBossPhase: false,
+  finalBossMinionTimer: 0,
+  preFinalBossUpgradeShown: false,
+  endless: false,
+  endlessTime: 0,
+  endlessLevel: 0,
+  batSwing: 0,
+  attackCooldown: 0,
+  spawnTimer: 0,
+  spawnInterval: 1.4,
+  score: 0,
+  lives: 3,
+  over: false,
+  paused: true,
+  hitFlash: 0,
+  notify: '',
+  notifyTime: 0,
+  preBossUpgradeShown: false,
+  nextUpgrade: UPGRADE_EVERY,
+  upgrades: { extraBullets: 0, damageMult: 1, cooldownMult: 1, spreadMult: 1, allDirections: 0 },
+  enemySpeedMult: 1,
+};
+
+// rarity: common (40), uncommon (20), rare (10), epic (5), legendary (2)
+const UPGRADE_POOL = [
+  { id: 'hp1',      title: '+1 HP',          desc: 'Životy +1',                                  rarity: 'common',    weight: 40, apply: () => { state.lives += 1; livesEl.textContent = 'Životy: ' + state.lives; } },
+  { id: 'hp2',      title: '+2 HP',          desc: 'Životy +2',                                  rarity: 'uncommon',  weight: 18, apply: () => { state.lives += 2; livesEl.textContent = 'Životy: ' + state.lives; } },
+  { id: 'hp3',      title: '+3 HP',          desc: 'Životy +3',                                  rarity: 'rare',      weight: 8,  apply: () => { state.lives += 3; livesEl.textContent = 'Životy: ' + state.lives; } },
+  { id: 'hp5',      title: '+5 HP',          desc: 'Životy +5',                                  rarity: 'legendary', weight: 2,  apply: () => { state.lives += 5; livesEl.textContent = 'Životy: ' + state.lives; } },
+  { id: 'cd10',     title: '−10% cooldown',  desc: 'Všechny zbraně střílí o 10 % rychleji',     rarity: 'common',    weight: 40, apply: () => { state.upgrades.cooldownMult *= 0.9; } },
+  { id: 'cd20',     title: '−20% cooldown',  desc: 'Všechny zbraně střílí o 20 % rychleji',     rarity: 'uncommon',  weight: 15, apply: () => { state.upgrades.cooldownMult *= 0.8; } },
+  { id: 'dmg10',    title: '+10% damage',    desc: 'Všechny zbraně dávají o 10 % více damage',  rarity: 'common',    weight: 30, apply: () => { state.upgrades.damageMult *= 1.1; } },
+  { id: 'dmg20',    title: '+20% damage',    desc: 'Všechny zbraně dávají o 20 % více damage',  rarity: 'uncommon',  weight: 15, apply: () => { state.upgrades.damageMult *= 1.2; } },
+  { id: 'spread15', title: '+15% spread',    desc: 'AK47 má širší rozptyl o 15 %',              rarity: 'common',    weight: 35, apply: () => { state.upgrades.spreadMult *= 1.15; } },
+  { id: 'bullets1', title: '+1 střela',      desc: 'AK47 vystřelí o 1 střelu více (+10 % spread)', rarity: 'common',    weight: 30, apply: () => { state.upgrades.extraBullets += 1; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'bullets2', title: '+2 střely',      desc: 'AK47 vystřelí o 2 střely více (+10 % spread)', rarity: 'uncommon',  weight: 18, apply: () => { state.upgrades.extraBullets += 2; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'dmg50',    title: '+50% damage',    desc: 'Všechny zbraně dávají o 50 % více damage',  rarity: 'rare',      weight: 10, apply: () => { state.upgrades.damageMult *= 1.5; } },
+  { id: 'bullets3', title: '+3 střely',      desc: 'AK47 vystřelí o 3 střely více (+10 % spread)', rarity: 'rare',      weight: 9,  apply: () => { state.upgrades.extraBullets += 3; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'bullets4', title: '+4 střely',      desc: 'AK47 vystřelí o 4 střely více (+10 % spread)', rarity: 'epic',      weight: 5,  apply: () => { state.upgrades.extraBullets += 4; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'bullets5', title: '+5 střel',       desc: 'AK47 vystřelí o 5 střel více (+10 % spread)',  rarity: 'legendary', weight: 2,  apply: () => { state.upgrades.extraBullets += 5; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'cd50',     title: '−50% cooldown',  desc: 'Všechny zbraně střílí dvakrát rychleji',    rarity: 'legendary', weight: 2,  apply: () => { state.upgrades.cooldownMult *= 0.5; } },
+  // mythic a godly — velmi vzácné dropy z normálního poolu
+  { id: 'm_bullets_r',  title: '+10 střel',      desc: 'AK47 vystřelí o 10 střel více (+10 % spread)',    rarity: 'mythic', weight: 0.6, apply: () => { state.upgrades.extraBullets += 10; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'm_omni_r',     title: 'Střelba 360°',   desc: 'Každý výstřel vystřelí navíc 8 střel do všech stran', rarity: 'mythic', weight: 0.6, apply: () => { state.upgrades.allDirections += 8; } },
+  { id: 'm_cooldown_r', title: '−100% cooldown', desc: 'Cooldown všech zbraní × 0.1 (jako blesk)',        rarity: 'mythic', weight: 0.6, apply: () => { state.upgrades.cooldownMult *= 0.1; } },
+  { id: 'm_damage_r',   title: '+75% damage',    desc: 'Všechny zbraně dávají o 75 % více damage',        rarity: 'mythic', weight: 0.6, apply: () => { state.upgrades.damageMult *= 1.75; } },
+  { id: 'g_bullets_r',  title: '+20 střel',      desc: 'AK47 vystřelí o 20 střel více (+10 % spread)',    rarity: 'godly',  weight: 0.2, apply: () => { state.upgrades.extraBullets += 20; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'g_cooldown_r', title: '−200% cooldown', desc: 'Cooldown všech zbraní × 0.05 (nezastavitelné)',   rarity: 'godly',  weight: 0.2, apply: () => { state.upgrades.cooldownMult *= 0.05; } },
+  { id: 'g_damage_r',   title: '+150% damage',   desc: 'Všechny zbraně dávají o 150 % více damage',       rarity: 'godly',  weight: 0.2, apply: () => { state.upgrades.damageMult *= 2.5; } },
+];
+
+const PRE_BOSS_POOL = [
+  ...UPGRADE_POOL.filter(u => u.rarity === 'legendary'),
+  { id: 'm_bullets',  title: '+10 střel',       desc: 'AK47 vystřelí o 10 střel více (+10 % spread)',     rarity: 'mythic', weight: 1, apply: () => { state.upgrades.extraBullets += 10; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'm_omni',     title: 'Střelba 360°',    desc: 'Každý výstřel vystřelí navíc 8 střel do všech stran',     rarity: 'mythic', weight: 1, apply: () => { state.upgrades.allDirections += 8; } },
+  { id: 'm_cooldown', title: '−100% cooldown',  desc: 'Cooldown všech zbraní × 0.1 (jako blesk)',         rarity: 'mythic', weight: 1, apply: () => { state.upgrades.cooldownMult *= 0.1; } },
+  { id: 'm_damage',   title: '+75% damage',     desc: 'Všechny zbraně dávají o 75 % více damage',         rarity: 'mythic', weight: 1, apply: () => { state.upgrades.damageMult *= 1.75; } },
+  { id: 'g_bullets',  title: '+20 střel',       desc: 'AK47 vystřelí o 20 střel více (+10 % spread)',     rarity: 'godly',  weight: 1, apply: () => { state.upgrades.extraBullets += 20; state.upgrades.spreadMult *= 1.1; } },
+  { id: 'g_cooldown', title: '−200% cooldown',  desc: 'Cooldown všech zbraní × 0.05 (nezastavitelné)',    rarity: 'godly',  weight: 1, apply: () => { state.upgrades.cooldownMult *= 0.05; } },
+  { id: 'g_damage',   title: '+150% damage',    desc: 'Všechny zbraně dávají o 150 % více damage',        rarity: 'godly',  weight: 1, apply: () => { state.upgrades.damageMult *= 2.5; } },
+];
+
+const FINAL_BOSS_POOL = PRE_BOSS_POOL.filter(u => u.rarity === 'godly');
+
+function pickUpgrades(n, sourcePool) {
+  let pool = (sourcePool || UPGRADE_POOL).slice();
+  const picked = [];
+  for (let k = 0; k < n && pool.length > 0; k++) {
+    const total = pool.reduce((s, u) => s + u.weight, 0);
+    let r = Math.random() * total;
+    let i = 0;
+    for (; i < pool.length; i++) {
+      r -= pool[i].weight;
+      if (r <= 0) break;
+    }
+    if (i >= pool.length) i = pool.length - 1;
+    picked.push(pool[i]);
+    pool.splice(i, 1);
+  }
+  return picked;
+}
+state.px = cx;
+state.py = cy;
+
+const keys = { w: false, a: false, s: false, d: false, space: false, mouse: false, r: false };
+const SPIN_SPEED = 14; // rad/s při držení R
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'w') keys.w = true;
+  if (k === 'a') keys.a = true;
+  if (k === 's') keys.s = true;
+  if (k === 'd') keys.d = true;
+  if (k === 'r') keys.r = true;
+  if (k === 'e' && !e.repeat) switchWeapon();
+  if (e.code === 'Space') {
+    e.preventDefault();
+    keys.space = true;
+  }
+  if (e.key === 'Shift' && !e.repeat) {
+    if (document.pointerLockElement === canvas) document.exitPointerLock();
+  }
+  if (k === 'u' && !e.repeat && state.mode === 'sandbox' && !state.over && !state.paused) {
+    openUpgradeMenu({ sandbox: true });
+  }
+  if (k === 't' && !e.repeat && state.mode === 'sandbox' && !state.over && !state.paused) {
+    state.paused = true;
+    if (document.pointerLockElement === canvas) document.exitPointerLock();
+    setTimeout(() => {
+      const v = prompt('Kolik bodů přidat?', '100');
+      state.paused = false;
+      if (v !== null) {
+        const n = parseInt(v, 10);
+        if (!isNaN(n) && n > 0) addScore(n);
+      }
+    }, 0);
+  }
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if (e.code === 'Space') keys.space = false;
+  if (k === 'w') keys.w = false;
+  if (k === 'a') keys.a = false;
+  if (k === 's') keys.s = false;
+  if (k === 'd') keys.d = false;
+  if (k === 'r') keys.r = false;
+});
+
+function switchWeapon() {
+  let i = WEAPON_ORDER.indexOf(state.weapon);
+  for (let n = 0; n < WEAPON_ORDER.length; n++) {
+    i = (i + 1) % WEAPON_ORDER.length;
+    if (state.unlocked[WEAPON_ORDER[i]]) {
+      state.weapon = WEAPON_ORDER[i];
+      break;
+    }
+  }
+  state.attackCooldown = 0;
+  weaponEl.textContent = 'Zbraň: ' + WEAPONS[state.weapon].name;
+}
+
+function tryAttack() {
+  if (state.over || state.paused) return;
+  if (state.attackCooldown > 0) return;
+  const w = WEAPONS[state.weapon];
+  const dmg = w.damage * state.upgrades.damageMult;
+  state.attackCooldown = w.cooldown * state.upgrades.cooldownMult;
+
+  if (state.weapon === 'pistol') {
+    state.bullets.push({
+      x: state.px + Math.cos(state.angle) * (PLAYER_RADIUS + 4),
+      y: state.py + Math.sin(state.angle) * (PLAYER_RADIUS + 4),
+      vx: Math.cos(state.angle) * BULLET_SPEED,
+      vy: Math.sin(state.angle) * BULLET_SPEED,
+      radius: 5,
+      damage: dmg,
+      alive: true,
+    });
+  } else if (state.weapon === 'ak') {
+    const N = 2 + state.upgrades.extraBullets;
+    const spreadAngle = 0.9 * state.upgrades.spreadMult;
+    for (let i = 0; i < N; i++) {
+      const t = N === 1 ? 0 : (i / (N - 1)) - 0.5;
+      const a = state.angle + t * spreadAngle;
+      state.bullets.push({
+        x: state.px + Math.cos(a) * (PLAYER_RADIUS + 4),
+        y: state.py + Math.sin(a) * (PLAYER_RADIUS + 4),
+        vx: Math.cos(a) * BULLET_SPEED,
+        vy: Math.sin(a) * BULLET_SPEED,
+        radius: 4,
+        damage: dmg,
+        alive: true,
+      });
+    }
+  } else if (state.weapon === 'rpg') {
+    state.bullets.push({
+      x: state.px + Math.cos(state.angle) * (PLAYER_RADIUS + 4),
+      y: state.py + Math.sin(state.angle) * (PLAYER_RADIUS + 4),
+      vx: Math.cos(state.angle) * w.projSpeed,
+      vy: Math.sin(state.angle) * w.projSpeed,
+      radius: 8,
+      damage: dmg,
+      isRpg: true,
+      explosionRadius: w.explosionRadius,
+      alive: true,
+    });
+  } else if (state.weapon === 'bat') {
+    state.batSwing = 0.18;
+    for (const e of state.enemies) {
+      if (!e.alive) continue;
+      const dx = e.x - state.px;
+      const dy = e.y - state.py;
+      const dist = Math.hypot(dx, dy);
+      if (dist > w.range + e.radius) continue;
+      const ang = Math.atan2(dy, dx);
+      let diff = Math.abs(ang - state.angle);
+      if (diff > Math.PI) diff = Math.PI * 2 - diff;
+      if (diff <= w.arc / 2) {
+        damageEnemy(e, dmg);
+      }
+    }
+  }
+
+  // mythic upgrade: střelba 360°
+  if (state.upgrades.allDirections > 0 && state.weapon !== 'bat') {
+    const N = state.upgrades.allDirections;
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      state.bullets.push({
+        x: state.px + Math.cos(a) * (PLAYER_RADIUS + 4),
+        y: state.py + Math.sin(a) * (PLAYER_RADIUS + 4),
+        vx: Math.cos(a) * BULLET_SPEED,
+        vy: Math.sin(a) * BULLET_SPEED,
+        radius: 4,
+        damage: dmg,
+        alive: true,
+      });
+    }
+  }
+}
+
+function addScore(amount) {
+  state.score += amount;
+  scoreEl.textContent = 'Skóre: ' + state.score;
+  const w = currentWave();
+  waveEl.textContent = 'Vlna: ' + w + '/' + WAVE_TYPES.length;
+  if (state.score >= AK_UNLOCK_KILLS && !state.unlocked.ak) {
+    state.unlocked.ak = true;
+    state.notify = 'Odemčena nová zbraň: AK47! (E pro přepnutí)';
+    state.notifyTime = 4;
+  }
+  if (state.score >= RPG_UNLOCK_KILLS && !state.unlocked.rpg) {
+    state.unlocked.rpg = true;
+    state.notify = 'Odemčena nová zbraň: RPG! (E pro přepnutí)';
+    state.notifyTime = 4;
+  }
+  if (state.score >= 899 && state.score < BOSS_TRIGGER_SCORE && !state.preBossUpgradeShown) {
+    state.preBossUpgradeShown = true;
+    if (state.nextUpgrade <= 900) state.nextUpgrade = 950;
+    openUpgradeMenu({ preBoss: true });
+    return;
+  }
+  if (state.score >= 2499 && state.score < FINAL_BOSS_TRIGGER_SCORE && !state.preFinalBossUpgradeShown) {
+    state.preFinalBossUpgradeShown = true;
+    if (state.nextUpgrade <= 2500) state.nextUpgrade = 2550;
+    openUpgradeMenu({ finalBoss: true });
+    return;
+  }
+}
+
+function damageEnemy(e, dmg) {
+  e.hp -= dmg;
+  if (e.hp <= 0) {
+    e.alive = false;
+    const oldWave = currentWave();
+    state.score += 1;
+    scoreEl.textContent = 'Skóre: ' + state.score;
+    if (e.isFinalBoss) {
+      state.over = true;
+      state.finalBossDefeated = true;
+      finalTextEl.textContent = 'PORAZIL JSI FINAL BOSSE! Skóre: ' + state.score;
+      document.getElementById('continueBtn').style.display = 'inline-block';
+      gameoverEl.style.display = 'flex';
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
+      return;
+    }
+    if (e.isBoss) {
+      state.bossPhase = false;
+      state.bossDefeated = true;
+      state.spawnTimer = 0;
+      state.notify = 'BOSS PORAŽEN! Pokračuj k 2500 a FINAL BOSSOVI!';
+      state.notifyTime = 5;
+    }
+    const newWave = currentWave();
+    if (newWave > oldWave && newWave <= WAVE_TYPES.length) {
+      state.enemySpeedMult *= 1.1;
+      for (const en of state.enemies) en.speed *= 1.1;
+      state.notify = 'Vlna ' + newWave + '! Nový nepřítel: ' + WAVE_NEW_ENEMY[newWave - 1];
+      state.notifyTime = 4;
+      waveEl.textContent = 'Vlna: ' + newWave + '/' + WAVE_TYPES.length;
+    }
+    if (state.score >= AK_UNLOCK_KILLS && !state.unlocked.ak) {
+      state.unlocked.ak = true;
+      state.notify = 'Odemčena nová zbraň: AK47! (E pro přepnutí)';
+      state.notifyTime = 4;
+    }
+    if (state.score >= RPG_UNLOCK_KILLS && !state.unlocked.rpg) {
+      state.unlocked.rpg = true;
+      state.notify = 'Odemčena nová zbraň: RPG! (E pro přepnutí)';
+      state.notifyTime = 4;
+    }
+    if (state.score === 899 && !state.preBossUpgradeShown) {
+      state.preBossUpgradeShown = true;
+      if (state.nextUpgrade <= 900) state.nextUpgrade = 950;
+      openUpgradeMenu({ preBoss: true });
+      return;
+    }
+    if (state.score === 2499 && !state.preFinalBossUpgradeShown) {
+      state.preFinalBossUpgradeShown = true;
+      if (state.nextUpgrade <= 2500) state.nextUpgrade = 2550;
+      openUpgradeMenu({ finalBoss: true });
+      return;
+    }
+    if (state.score >= state.nextUpgrade) {
+      openUpgradeMenu();
+    }
+  }
+}
+
+function explodeAt(x, y, radius, dmg) {
+  for (const e of state.enemies) {
+    if (!e.alive) continue;
+    const dx = e.x - x;
+    const dy = e.y - y;
+    if (dx * dx + dy * dy <= radius * radius) {
+      damageEnemy(e, dmg);
+    }
+  }
+  state.explosions.push({ x, y, radius, age: 0, maxAge: 0.4 });
+}
+
+function openUpgradeMenu(opts = {}) {
+  state.paused = true;
+  if (document.pointerLockElement === canvas) document.exitPointerLock();
+  let pool = null;
+  let count = 3;
+  let title = 'Vyber si upgrade!';
+  let picks = 1;
+  if (opts.finalBoss) { pool = FINAL_BOSS_POOL; count = 3; picks = 2; title = 'PŘED FINAL BOSSEM — vyber 2 Godly!'; }
+  else if (opts.preBoss) { pool = PRE_BOSS_POOL; count = 3; title = 'PŘED BOSSEM — Legendary / Mythic / Godly!'; }
+  else if (opts.sandbox) { pool = UPGRADE_POOL; count = 10; title = 'Sandbox upgrade — vyber si jeden z 10!'; }
+  state.upgradePicksRemaining = picks;
+  state.currentUpgradeOpts = opts;
+  state.currentUpgradeTitleBase = title;
+  const choices = pickUpgrades(count, pool);
+  upgradeTitleEl.textContent = title;
+  upgradeOptionsEl.innerHTML = '';
+  for (const u of choices) {
+    const card = document.createElement('div');
+    card.className = 'upgrade-card ' + u.rarity;
+    card.innerHTML = `<div class="rarity">${u.rarity}</div><div class="title">${u.title}</div><div class="desc">${u.desc}</div>`;
+    card.addEventListener('click', () => chooseUpgrade(u, opts, card));
+    upgradeOptionsEl.appendChild(card);
+  }
+  upgradeEl.style.display = 'flex';
+}
+
+function chooseUpgrade(u, opts = {}, cardEl) {
+  u.apply();
+  state.upgradePicksRemaining--;
+  if (state.upgradePicksRemaining > 0) {
+    upgradeTitleEl.textContent = state.currentUpgradeTitleBase + '  (ještě ' + state.upgradePicksRemaining + '×)';
+    return;
+  }
+  if (!opts.preBoss && !opts.finalBoss && !opts.sandbox) state.nextUpgrade += UPGRADE_EVERY;
+  state.paused = false;
+  upgradeEl.style.display = 'none';
+  canvas.requestPointerLock();
+}
+
+function makeEnemyAt(typeId, x, y, opts = {}) {
+  const t = ENEMY_TYPES[typeId];
+  const endlessHpMult = state.endless && !opts.isBoss && !opts.isFinalBoss ? Math.pow(1.5, state.endlessLevel) : 1;
+  const endlessSpeedMult = state.endless ? Math.pow(1.05, state.endlessLevel) : 1;
+  state.enemies.push({
+    x, y,
+    type: typeId,
+    color: t.color,
+    speed: (t.speedMin + Math.random() * (t.speedMax - t.speedMin)) * state.enemySpeedMult * endlessSpeedMult,
+    radius: t.radius,
+    hp: t.hp * endlessHpMult,
+    maxHp: t.hp * endlessHpMult,
+    isBoss: !!opts.isBoss,
+    isFinalBoss: !!opts.isFinalBoss,
+    alive: true,
+  });
+}
+
+function spawnEnemy() {
+  const side = Math.floor(Math.random() * 4);
+  let x, y;
+  if (side === 0) { x = -30; y = Math.random() * H; }
+  else if (side === 1) { x = W + 30; y = Math.random() * H; }
+  else if (side === 2) { x = Math.random() * W; y = -30; }
+  else { x = Math.random() * W; y = H + 30; }
+  const wave = currentWave();
+  const types = WAVE_TYPES[wave - 1];
+  const typeId = types[Math.floor(Math.random() * types.length)];
+  makeEnemyAt(typeId, x, y);
+}
+
+function triggerBossPhase() {
+  state.bossPhase = true;
+  state.enemies = [];
+  state.bossMinionTimer = 0;
+  const side = Math.floor(Math.random() * 4);
+  let x, y;
+  if (side === 0) { x = -50; y = H / 2; }
+  else if (side === 1) { x = W + 50; y = H / 2; }
+  else if (side === 2) { x = W / 2; y = -50; }
+  else { x = W / 2; y = H + 50; }
+  makeEnemyAt('finalBoss', x, y, { isBoss: true });
+  state.notify = 'OBJEVIL SE BOSS! Pozor na elity okolo něj!';
+  state.notifyTime = 5;
+}
+
+function spawnBossMinions() {
+  const boss = state.enemies.find(e => e.isBoss && !e.isFinalBoss && e.alive);
+  if (!boss) return;
+  const count = BOSS_MINION_MIN + Math.floor(Math.random() * (BOSS_MINION_MAX - BOSS_MINION_MIN + 1));
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const r = boss.radius + 40 + Math.random() * 80;
+    makeEnemyAt('elite', boss.x + Math.cos(ang) * r, boss.y + Math.sin(ang) * r);
+  }
+}
+
+function triggerFinalBossPhase() {
+  state.finalBossPhase = true;
+  state.bossPhase = false;
+  state.enemies = [];
+  state.finalBossMinionTimer = 0;
+  const side = Math.floor(Math.random() * 4);
+  let x, y;
+  if (side === 0) { x = -80; y = H / 2; }
+  else if (side === 1) { x = W + 80; y = H / 2; }
+  else if (side === 2) { x = W / 2; y = -80; }
+  else { x = W / 2; y = H + 80; }
+  makeEnemyAt('ultraBoss', x, y, { isBoss: true, isFinalBoss: true });
+  state.notify = 'OBJEVIL SE FINAL BOSS! Toto je konec...';
+  state.notifyTime = 6;
+}
+
+function spawnFinalBossMinions() {
+  const boss = state.enemies.find(e => e.isFinalBoss && e.alive);
+  if (!boss) return;
+  const count = FINAL_BOSS_MINION_MIN + Math.floor(Math.random() * (FINAL_BOSS_MINION_MAX - FINAL_BOSS_MINION_MIN + 1));
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const r = boss.radius + 50 + Math.random() * 100;
+    makeEnemyAt('ultraMinion', boss.x + Math.cos(ang) * r, boss.y + Math.sin(ang) * r);
+  }
+}
+
+function update(dt) {
+  if (state.over || state.paused) return;
+
+  // pohyb hráče
+  let mvx = 0, mvy = 0;
+  if (keys.a) mvx -= 1;
+  if (keys.d) mvx += 1;
+  if (keys.w) mvy -= 1;
+  if (keys.s) mvy += 1;
+  if (mvx !== 0 || mvy !== 0) {
+    const len = Math.hypot(mvx, mvy);
+    state.px += (mvx / len) * PLAYER_SPEED * dt;
+    state.py += (mvy / len) * PLAYER_SPEED * dt;
+    state.px = Math.max(PLAYER_RADIUS, Math.min(W - PLAYER_RADIUS, state.px));
+    state.py = Math.max(PLAYER_RADIUS, Math.min(H - PLAYER_RADIUS, state.py));
+  }
+
+  if (keys.r) {
+    state.angle += SPIN_SPEED * dt;
+    aimX = Math.cos(state.angle) * RETICLE_DIST;
+    aimY = Math.sin(state.angle) * RETICLE_DIST;
+  } else {
+    state.angle = Math.atan2(aimY, aimX);
+  }
+
+  if (state.attackCooldown > 0) state.attackCooldown -= dt;
+  if (state.batSwing > 0) state.batSwing -= dt;
+
+  if (keys.space || keys.mouse) tryAttack();
+
+  for (const b of state.bullets) {
+    if (!b.alive) continue;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    if (b.x < -20 || b.x > W + 20 || b.y < -20 || b.y > H + 20) {
+      b.alive = false;
+      continue;
+    }
+    for (const e of state.enemies) {
+      if (!e.alive) continue;
+      const dx = b.x - e.x;
+      const dy = b.y - e.y;
+      if (dx * dx + dy * dy <= (e.radius + b.radius) * (e.radius + b.radius)) {
+        b.alive = false;
+        if (b.isRpg) {
+          explodeAt(b.x, b.y, b.explosionRadius, b.damage);
+        } else {
+          damageEnemy(e, b.damage);
+        }
+        break;
+      }
+    }
+  }
+  state.bullets = state.bullets.filter(b => b.alive);
+
+  for (const ex of state.explosions) ex.age += dt;
+  state.explosions = state.explosions.filter(ex => ex.age < ex.maxAge);
+
+  if (state.score >= BOSS_TRIGGER_SCORE && !state.bossPhase && !state.bossDefeated) {
+    triggerBossPhase();
+  }
+  if (state.score >= FINAL_BOSS_TRIGGER_SCORE && !state.finalBossPhase) {
+    triggerFinalBossPhase();
+  }
+
+  if (state.finalBossPhase) {
+    state.finalBossMinionTimer += dt;
+    if (state.finalBossMinionTimer >= FINAL_BOSS_MINION_INTERVAL) {
+      state.finalBossMinionTimer = 0;
+      spawnFinalBossMinions();
+    }
+  } else if (state.bossPhase) {
+    state.bossMinionTimer += dt;
+    if (state.bossMinionTimer >= BOSS_MINION_INTERVAL) {
+      state.bossMinionTimer = 0;
+      spawnBossMinions();
+    }
+  } else {
+    if (state.endless) {
+      state.endlessTime += dt;
+      const newLevel = Math.floor(state.endlessTime / ENDLESS_LEVEL_TIME);
+      if (newLevel > state.endlessLevel) {
+        state.endlessLevel = newLevel;
+        state.notify = 'Endless lvl ' + newLevel + '! Nepřátelé silnější.';
+        state.notifyTime = 3;
+      }
+    }
+    state.spawnTimer += dt;
+    const wave = currentWave();
+    const endlessBatch = state.endless ? state.endlessLevel : 0;
+    const endlessRate = state.endless ? Math.pow(1.3, state.endlessLevel) : 1;
+    const interval = Math.max(0.05, state.spawnInterval / Math.pow(1.5, wave - 1) / endlessRate);
+    if (state.spawnTimer >= interval) {
+      state.spawnTimer = 0;
+      const batch = 3 + endlessBatch;
+      for (let i = 0; i < batch; i++) spawnEnemy();
+    }
+  }
+
+  for (const e of state.enemies) {
+    if (!e.alive) continue;
+
+    // sledování hráče
+    const tx = state.px - e.x;
+    const ty = state.py - e.y;
+    const tlen = Math.hypot(tx, ty) || 1;
+    e.x += (tx / tlen) * e.speed * dt;
+    e.y += (ty / tlen) * e.speed * dt;
+
+    // kolize s hráčem
+    const dx = e.x - state.px;
+    const dy = e.y - state.py;
+    if (dx * dx + dy * dy <= (e.radius + PLAYER_RADIUS) * (e.radius + PLAYER_RADIUS)) {
+      if (e.isBoss) {
+        const dist = Math.hypot(dx, dy) || 1;
+        state.px -= (dx / dist) * 250;
+        state.py -= (dy / dist) * 250;
+        state.px = Math.max(PLAYER_RADIUS, Math.min(W - PLAYER_RADIUS, state.px));
+        state.py = Math.max(PLAYER_RADIUS, Math.min(H - PLAYER_RADIUS, state.py));
+      } else {
+        e.alive = false;
+      }
+      state.lives -= 1;
+      state.hitFlash = 0.3;
+      livesEl.textContent = 'Životy: ' + state.lives;
+      if (state.lives <= 0) {
+        state.over = true;
+        finalTextEl.textContent = 'Konec hry! Skóre: ' + state.score;
+        gameoverEl.style.display = 'flex';
+      }
+    }
+  }
+
+  state.enemies = state.enemies.filter(e => e.alive);
+
+  if (state.hitFlash > 0) state.hitFlash -= dt;
+  if (state.notifyTime > 0) state.notifyTime -= dt;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // pozadí - blikne při zásahu
+  if (state.hitFlash > 0) {
+    ctx.fillStyle = 'rgba(233, 69, 96, ' + (state.hitFlash * 0.5) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // střely
+  for (const b of state.bullets) {
+    if (b.isRpg) {
+      ctx.fillStyle = '#ff6b35';
+      ctx.shadowColor = '#ff6b35';
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = '#ffd460';
+      ctx.shadowColor = '#ffd460';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // výbuchy
+  for (const ex of state.explosions) {
+    const t = ex.age / ex.maxAge;
+    const r = ex.radius * t;
+    ctx.fillStyle = 'rgba(255, 107, 53, ' + (0.5 * (1 - t)) + ')';
+    ctx.beginPath();
+    ctx.arc(ex.x, ex.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 220, 100, ' + (1 - t) + ')';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(ex.x, ex.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // nepřátelé
+  for (const e of state.enemies) {
+    ctx.fillStyle = e.color;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+    ctx.fill();
+    // oko směrem k hráči
+    const ang = Math.atan2(state.py - e.y, state.px - e.x);
+    const eyeR = Math.max(3, e.radius * 0.28);
+    const ox = Math.cos(ang) * (eyeR + 1);
+    const oy = Math.sin(ang) * (eyeR + 1);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(e.x + ox, e.y + oy, eyeR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(e.x + ox * 1.3, e.y + oy * 1.3, eyeR * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    // HP bar
+    if (e.hp < e.maxHp) {
+      const bw = Math.max(36, e.radius * 2), bh = 4;
+      const ratio = e.hp / e.maxHp;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(e.x - bw / 2, e.y - e.radius - 10, bw, bh);
+      ctx.fillStyle = ratio > 0.5 ? '#4caf50' : (ratio > 0.25 ? '#ffb300' : '#e94560');
+      ctx.fillRect(e.x - bw / 2, e.y - e.radius - 10, bw * ratio, bh);
+    }
+  }
+
+  // hráč
+  ctx.save();
+  ctx.translate(state.px, state.py);
+
+  // tělo
+  ctx.fillStyle = '#0f3460';
+  ctx.strokeStyle = '#53a8e2';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.rotate(state.angle);
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+
+  if (state.weapon === 'pistol') {
+    // hlaveň pistole
+    ctx.fillStyle = '#bbb';
+    ctx.fillRect(PLAYER_RADIUS, -4, 28, 8);
+    ctx.strokeRect(PLAYER_RADIUS, -4, 28, 8);
+    // rukojeť
+    ctx.fillStyle = '#444';
+    ctx.fillRect(PLAYER_RADIUS + 4, 4, 10, 10);
+    ctx.strokeRect(PLAYER_RADIUS + 4, 4, 10, 10);
+  } else if (state.weapon === 'rpg') {
+    // trubka RPG
+    ctx.fillStyle = '#2d4a2b';
+    ctx.fillRect(PLAYER_RADIUS, -8, 56, 16);
+    ctx.strokeRect(PLAYER_RADIUS, -8, 56, 16);
+    // špička/raketa
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath();
+    ctx.moveTo(PLAYER_RADIUS + 56, -8);
+    ctx.lineTo(PLAYER_RADIUS + 70, 0);
+    ctx.lineTo(PLAYER_RADIUS + 56, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // mířidlo
+    ctx.fillStyle = '#1a2a18';
+    ctx.fillRect(PLAYER_RADIUS + 10, -14, 6, 8);
+    ctx.strokeRect(PLAYER_RADIUS + 10, -14, 6, 8);
+  } else if (state.weapon === 'ak') {
+    // tělo
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(PLAYER_RADIUS, -5, 52, 10);
+    ctx.strokeRect(PLAYER_RADIUS, -5, 52, 10);
+    // hlaveň
+    ctx.fillStyle = '#222';
+    ctx.fillRect(PLAYER_RADIUS + 52, -2, 14, 4);
+    ctx.strokeRect(PLAYER_RADIUS + 52, -2, 14, 4);
+    // zásobník
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.moveTo(PLAYER_RADIUS + 14, 5);
+    ctx.lineTo(PLAYER_RADIUS + 16, 18);
+    ctx.lineTo(PLAYER_RADIUS + 28, 18);
+    ctx.lineTo(PLAYER_RADIUS + 30, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // mušle (mírný záblesk při střelbě)
+    if (state.attackCooldown > 0.03) {
+      ctx.fillStyle = 'rgba(255, 220, 100, 0.9)';
+      ctx.beginPath();
+      ctx.arc(PLAYER_RADIUS + 70, 0, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    // baseballová pálka (švih = otočení)
+    const swingAngle = state.batSwing > 0 ? -Math.PI / 3 * (state.batSwing / 0.18) + Math.PI / 6 : Math.PI / 6;
+    ctx.rotate(swingAngle);
+    ctx.fillStyle = '#a0522d';
+    ctx.beginPath();
+    ctx.moveTo(PLAYER_RADIUS, -3);
+    ctx.lineTo(PLAYER_RADIUS + 50, -8);
+    ctx.lineTo(PLAYER_RADIUS + 60, 0);
+    ctx.lineTo(PLAYER_RADIUS + 50, 8);
+    ctx.lineTo(PLAYER_RADIUS, 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // rukojeť
+    ctx.fillStyle = '#2a1810';
+    ctx.fillRect(PLAYER_RADIUS - 2, -3, 12, 6);
+    ctx.strokeRect(PLAYER_RADIUS - 2, -3, 12, 6);
+  }
+
+  ctx.restore();
+
+  // vizualizace švihu pálky (oblouk)
+  if (state.weapon === 'bat' && state.batSwing > 0) {
+    const t = state.batSwing / 0.18;
+    const w = WEAPONS.bat;
+    ctx.strokeStyle = 'rgba(255, 212, 96, ' + t + ')';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(state.px, state.py, w.range, state.angle - w.arc / 2, state.angle + w.arc / 2);
+    ctx.stroke();
+  }
+
+  // mířítko (kurzor) - vždy před hráčem
+  const rx = state.px + Math.cos(state.angle) * RETICLE_DIST;
+  const ry = state.py + Math.sin(state.angle) * RETICLE_DIST;
+  ctx.strokeStyle = '#ffd460';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(rx, ry, 14, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(rx - 20, ry);
+  ctx.lineTo(rx - 8, ry);
+  ctx.moveTo(rx + 8, ry);
+  ctx.lineTo(rx + 20, ry);
+  ctx.moveTo(rx, ry - 20);
+  ctx.lineTo(rx, ry - 8);
+  ctx.moveTo(rx, ry + 8);
+  ctx.lineTo(rx, ry + 20);
+  ctx.stroke();
+  ctx.fillStyle = '#ffd460';
+  ctx.beginPath();
+  ctx.arc(rx, ry, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // hint pro pointer lock
+  if (document.pointerLockElement !== canvas && !state.over && !state.paused) {
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Klikni do hry pro zamčení kurzoru (Shift = uvolnit)', W / 2, H - 40);
+    ctx.textAlign = 'start';
+  }
+
+  // BOSS HP bar nahoře
+  const boss = state.enemies.find(e => e.isBoss && e.alive);
+  if (boss) {
+    const bw = Math.min(700, W - 80);
+    const bh = 22;
+    const bx = (W - bw) / 2;
+    const by = 50;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4);
+    ctx.fillStyle = '#333';
+    ctx.fillRect(bx, by, bw, bh);
+    const ratio = Math.max(0, boss.hp / boss.maxHp);
+    const grad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+    grad.addColorStop(0, '#d32f2f');
+    grad.addColorStop(1, '#4a0000');
+    ctx.fillStyle = grad;
+    ctx.fillRect(bx, by, bw * ratio, bh);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOSS  ' + Math.ceil(boss.hp) + ' / ' + boss.maxHp, W / 2, by + bh - 6);
+    ctx.textAlign = 'start';
+  }
+
+  // notifikace
+  if (state.notifyTime > 0) {
+    const alpha = Math.min(1, state.notifyTime / 0.5);
+    ctx.fillStyle = 'rgba(255, 212, 96, ' + alpha + ')';
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.notify, W / 2, 70);
+    ctx.textAlign = 'start';
+  }
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+function startGame(mode) {
+  state.mode = mode;
+  state.started = true;
+  state.paused = false;
+  if (mode === 'sandbox') {
+    state.unlocked = { pistol: true, bat: true, ak: true, rpg: true };
+    weaponEl.textContent = 'Zbraň: ' + WEAPONS[state.weapon].name;
+  }
+  document.getElementById('startmenu').style.display = 'none';
+  canvas.requestPointerLock();
+}
+window.startGame = startGame;
+
+function continueGame() {
+  state.over = false;
+  state.finalBossPhase = false;
+  state.enemies = state.enemies.filter(e => !e.isFinalBoss);
+  state.endless = true;
+  state.endlessTime = 0;
+  state.endlessLevel = 0;
+  state.notify = 'ENDLESS MÓD! Nepřátelé budou silnější a silnější...';
+  state.notifyTime = 5;
+  gameoverEl.style.display = 'none';
+  document.getElementById('continueBtn').style.display = 'none';
+  canvas.requestPointerLock();
+}
+window.continueGame = continueGame;
+
+function restart() {
+  state.px = cx;
+  state.py = cy;
+  state.angle = 0;
+  state.weapon = 'pistol';
+  state.unlocked = { pistol: true, bat: true, ak: false, rpg: false };
+  state.enemies = [];
+  state.bullets = [];
+  state.explosions = [];
+  state.bossPhase = false;
+  state.bossMinionTimer = 0;
+  state.bossDefeated = false;
+  state.finalBossPhase = false;
+  state.finalBossMinionTimer = 0;
+  state.finalBossDefeated = false;
+  state.preFinalBossUpgradeShown = false;
+  state.endless = false;
+  state.endlessTime = 0;
+  state.endlessLevel = 0;
+  document.getElementById('continueBtn').style.display = 'none';
+  state.attackCooldown = 0;
+  state.batSwing = 0;
+  state.spawnTimer = 0;
+  state.score = 0;
+  state.lives = 3;
+  state.over = false;
+  state.paused = true;
+  state.started = false;
+  document.getElementById('startmenu').style.display = 'flex';
+  state.hitFlash = 0;
+  state.notify = '';
+  state.notifyTime = 0;
+  state.preBossUpgradeShown = false;
+  state.nextUpgrade = UPGRADE_EVERY;
+  state.upgrades = { extraBullets: 0, damageMult: 1, cooldownMult: 1, spreadMult: 1, allDirections: 0 };
+  state.enemySpeedMult = 1;
+  upgradeEl.style.display = 'none';
+  weaponEl.textContent = 'Zbraň: ' + WEAPONS[state.weapon].name;
+  waveEl.textContent = 'Vlna: 1/' + WAVE_TYPES.length;
+  scoreEl.textContent = 'Skóre: 0';
+  livesEl.textContent = 'Životy: 3';
+  gameoverEl.style.display = 'none';
+}
+</script>
+</body>
+</html>
