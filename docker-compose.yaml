@@ -5,7 +5,7 @@ services:
       labels: &web_labels
         traefik.enable: "true"
         traefik.http.services.2d-game.loadbalancer.server.port: "80"
-        traefik.http.routers.2d-game.rule: "Host(`${PUBLISH_URL}`)"
+        traefik.http.routers.2d-game.rule: "Host(`${PUBLISH_DOMAIN}`)"
     labels: *web_labels
     networks:
       - dmz
